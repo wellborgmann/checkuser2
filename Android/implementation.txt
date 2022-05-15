@@ -1,0 +1,6 @@
+Build.gradle
+implementation 'com.android.volley:volley:1.2.1'
+
+AndroidManife.xml
+
+android:usesCleartextTraffic="true"

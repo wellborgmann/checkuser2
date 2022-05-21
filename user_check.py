@@ -5,12 +5,13 @@ import sys
 import typing as t
 import argparse
 import json
+import socket
 
 from datetime import datetime
 from flask import Flask, jsonify
 
 __author__ = '@DuTra01'
-__version__ = '0.1.6'
+__version__ = '1.1.5'
 
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
@@ -25,6 +26,8 @@ class OpenVPNManager:
         self.log_file = 'openvpn.log'
         self.log_path = '/var/log/openvpn/'
 
+        self.start_manager()
+
     @property
     def config(self) -> str:
         return os.path.join(self.config_path, self.config_file)
@@ -37,6 +40,11 @@ class OpenVPNManager:
 
         self.log_path = 'openvpn-status.log'
         return os.path.join(self.config_path, self.log_file)
+
+    def create_connection(self) -> socket.socket:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(('localhost', self.port))
+        return sock
 
     def start_manager(self) -> None:
         if os.path.exists(self.config):
@@ -55,11 +63,8 @@ class OpenVPNManager:
             os.system('service openvpn restart')
 
     def count_connection_from_manager(self, username: str) -> int:
-        self.start_manager()
         try:
-            import socket as s
-
-            soc = s.create_connection(('localhost', self.port), timeout=1)
+            soc = self.create_connection()
             soc.send(b'status\n')
 
             data = b''
@@ -69,6 +74,7 @@ class OpenVPNManager:
                 buf = soc.recv(1024)
                 data += buf
 
+            soc.close()
             count = data.count(username.encode())
             return count // 2 if count > 0 else 0
         except Exception:
@@ -86,6 +92,11 @@ class OpenVPNManager:
         count = self.count_connection_from_manager(username)
         return count if count > -1 else self.count_connection_from_log(username)
 
+    def kill_connection(self, username: str) -> None:
+        soc = self.create_connection()
+        soc.send(b'kill %s\n' % username.encode())
+        soc.close()
+
 
 class SSHManager:
     def count_connections(self, username: str) -> int:
@@ -93,74 +104,15 @@ class SSHManager:
         result = os.popen(command).readlines()
         return len([line for line in result if 'sshd' in line])
 
-
-class ServiceManager:
-    CONFIG_SYSTEMD_PATH = '/etc/systemd/system/'
-    CONFIG_SYSTEMD = 'user_check.service'
-
-    def __init__(self):
-        self.create_systemd_config()
-
-    @property
-    def config(self) -> str:
-        return os.path.join(self.CONFIG_SYSTEMD_PATH, self.CONFIG_SYSTEMD)
-
-    def status(self) -> str:
-        command = 'systemctl status %s' % self.CONFIG_SYSTEMD
+    def get_pids(self, username: str) -> t.List[int]:
+        command = 'ps -u %s' % username
         result = os.popen(command).readlines()
-        return ''.join(result)
+        return [int(line.split()[0]) for line in result if 'sshd' in line]
 
-    def start(self):
-        status = self.status()
-        if 'Active: active' not in status:
-            os.system('systemctl start %s' % self.CONFIG_SYSTEMD)
-            return True
-
-        print('Service is already running')
-        return False
-
-    def stop(self):
-        status = self.status()
-        if 'Active: inactive' not in status:
-            os.system('systemctl stop %s' % self.CONFIG_SYSTEMD)
-            return True
-
-        print('Service is already stopped')
-        return False
-
-    def restart(self) -> bool:
-        command = 'systemctl restart %s' % self.CONFIG_SYSTEMD
-        return os.system(command) == 0
-
-    def remove(self):
-        os.system('systemctl stop %s' % self.CONFIG_SYSTEMD)
-        os.system('systemctl disable %s' % self.CONFIG_SYSTEMD)
-        os.system('rm %s' % self.config)
-        os.system('systemctl daemon-reload')
-
-    def create_systemd_config(self):
-        config_template = ''.join(
-            [
-                '[Unit]\n',
-                'Description=User check service\n',
-                'After=network.target\n\n',
-                '[Service]\n',
-                'Type=simple\n',
-                'ExecStart=%s %s --run\n' % (sys.executable, os.path.abspath(__file__)),
-                'Restart=always\n',
-                'User=root\n',
-                'Group=root\n\n',
-                '[Install]\n',
-                'WantedBy=multi-user.target\n',
-            ]
-        )
-
-        config_path = os.path.join(self.CONFIG_SYSTEMD_PATH, self.CONFIG_SYSTEMD)
-        if not os.path.exists(config_path):
-            with open(config_path, 'w') as f:
-                f.write(config_template)
-
-            os.system('systemctl daemon-reload')
+    def kill_connection(self, username: str) -> None:
+        pids = self.get_pids(username)
+        for pid in pids:
+            os.kill(pid, 9)
 
 
 class CheckerUserManager:
@@ -207,6 +159,10 @@ class CheckerUserManager:
                         return int(split[1].strip())
 
         return -1
+
+    def kill_connection(self) -> None:
+        self.ssh_manager.kill_connection(self.username)
+        self.openvpn_manager.kill_connection(self.username)
 
 
 class CheckerUserConfig:
@@ -273,15 +229,23 @@ class CheckerUserConfig:
         with open(self.path_config, 'w') as f:
             f.write(json.dumps(self.config, indent=4))
 
+    @staticmethod
+    def remove_config() -> None:
+        if os.path.exists(CheckerUserConfig.PATH_CONFIG):
+            os.system('rm -rf %s' % CheckerUserConfig.PATH_CONFIG)
+
 
 class CheckerManager:
-    RAW_URL_DATA = 'https://raw.githubusercontent.com/NT-GIT-HUB/DataPlugin/main/user_check.py'
-    EXECUTE_PATH = '/usr/bin/checker'
+    RAW_URL_DATA = 'https://raw.githubusercontent.com/DuTra01/GLPlugins/master/user_check.py'
+
+    EXECUTABLE_PATH = '/usr/bin/'
+    EXECUTABLE_NAME = 'checker'
+    EXECUTABLE_FILE = EXECUTABLE_PATH + EXECUTABLE_NAME
 
     @staticmethod
     def create_executable() -> None:
         of_path = os.path.join(os.path.expanduser('~'), 'chk.py')
-        to_path = CheckerManager.EXECUTE_PATH
+        to_path = CheckerManager.EXECUTABLE_FILE
 
         if os.path.exists(to_path):
             os.unlink(to_path)
@@ -301,14 +265,14 @@ class CheckerManager:
         return response.text
 
     @staticmethod
-    def check_update() -> bool:
+    def check_update() -> t.Union[bool, str]:
         data = CheckerManager.get_data()
 
         if data:
             version = data.split('__version__ = ')[1].split('\n')[0].strip('\'')
-            return version != __version__
+            return version != __version__, version
 
-        return False
+        return False, __version__
 
     @staticmethod
     def update() -> bool:
@@ -324,6 +288,80 @@ class CheckerManager:
 
         CheckerManager.create_executable()
         return True
+
+    @staticmethod
+    def remove_executable() -> None:
+        os.remove(CheckerManager.EXECUTABLE_FILE)
+
+
+class ServiceManager:
+    CONFIG_SYSTEMD_PATH = '/etc/systemd/system/'
+    CONFIG_SYSTEMD = 'user_check.service'
+
+    def __init__(self):
+        self.create_systemd_config()
+
+    @property
+    def config(self) -> str:
+        return os.path.join(self.CONFIG_SYSTEMD_PATH, self.CONFIG_SYSTEMD)
+
+    def status(self) -> str:
+        command = 'systemctl status %s' % self.CONFIG_SYSTEMD
+        result = os.popen(command).readlines()
+        return ''.join(result)
+
+    def start(self):
+        status = self.status()
+        if 'Active: active' not in status:
+            os.system('systemctl start %s' % self.CONFIG_SYSTEMD)
+            return True
+
+        print('Service is already running')
+        return False
+
+    def stop(self):
+        status = self.status()
+        if 'Active: inactive' not in status:
+            os.system('systemctl stop %s' % self.CONFIG_SYSTEMD)
+            return True
+
+        print('Service is already stopped')
+        return False
+
+    def restart(self) -> bool:
+        command = 'systemctl restart %s' % self.CONFIG_SYSTEMD
+        return os.system(command) == 0
+
+    def remove_service(self):
+        os.system('systemctl stop %s' % self.CONFIG_SYSTEMD)
+        os.system('systemctl disable %s' % self.CONFIG_SYSTEMD)
+        os.system('rm %s' % self.config)
+        os.system('systemctl daemon-reload')
+
+    def create_systemd_config(self):
+        config_template = ''.join(
+            [
+                '[Unit]\n',
+                'Description=User check service\n',
+                'After=network.target\n\n',
+                '[Service]\n',
+                'Type=simple\n',
+                'ExecStart=%s %s --run\n' % (sys.executable, os.path.abspath(__file__)),
+                'Restart=always\n',
+                'User=root\n',
+                'Group=root\n\n',
+                '[Install]\n',
+                'WantedBy=multi-user.target\n',
+            ]
+        )
+
+        config_path = os.path.join(self.CONFIG_SYSTEMD_PATH, self.CONFIG_SYSTEMD)
+        if not os.path.exists(config_path):
+            with open(config_path, 'w') as f:
+                f.write(config_template)
+
+            os.system('systemctl daemon-reload')
+            os.system('systemctl enable %s' % self.CONFIG_SYSTEMD)
 
 
 def check_user(username: str) -> t.Dict[str, t.Any]:
@@ -348,6 +386,15 @@ def check_user(username: str) -> t.Dict[str, t.Any]:
         return {'error': str(e)}
 
 
+def kill_user(username: str) -> bool:
+    try:
+        checker = CheckerUserManager(username)
+        checker.kill_connection()
+        return True
+    except Exception:
+        return False
+
+
 @app.route('/check/<string:username>')
 def check_user_route(username):
     try:
@@ -364,8 +411,19 @@ def check_user_route(username):
         return jsonify({'error': str(e)})
 
 
+@app.route('/kill/<string:username>')
+def kill_user_route(username):
+    try:
+        return jsonify({'success': kill_user(username)})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+
 def main():
-    parser = argparse.ArgumentParser(description='Check user v%s' % __version__)
+    parser = argparse.ArgumentParser(
+        description='Check user v%s' % __version__,
+        prog=CheckerManager.EXECUTABLE_NAME,
+    )
     parser.add_argument('-u', '--username', type=str)
     parser.add_argument('-p', '--port', type=int, help='Port to run server')
     parser.add_argument('--json', action='store_true', help='Output in json format')
@@ -376,24 +434,33 @@ def main():
     parser.add_argument('--remove', action='store_true', help='Remove server')
     parser.add_argument('--restart', action='store_true', help='Restart server')
 
+    parser.add_argument('--kill', action='store_true', help='Kill user')
+
     parser.add_argument('--update', action='store_true', help='Update server')
     parser.add_argument('--check-update', action='store_true', help='Check update')
 
     parser.add_argument('--exclude', type=str, nargs='+', help='Exclude fields')
     parser.add_argument('--include', type=str, nargs='+', help='Include fields')
 
-    parser.add_argument('--version', action='store_true', help='Show version')
+    parser.add_argument('--uninstall', action='store_true', help='Uninstall server')
+    parser.add_argument('--version', action='version', version='%(prog)s v' + str(__version__))
 
     args = parser.parse_args()
     config = CheckerUserConfig()
     service = ServiceManager()
 
-    if not os.path.exists(CheckerManager.EXECUTE_PATH):
+    if not os.path.exists(CheckerManager.EXECUTABLE_FILE):
         CheckerManager.create_executable()
         print('Create executable success')
-        print('Run: {} --help'.format(os.path.basename(CheckerManager.EXECUTE_PATH)))
+        print('Run: {} --help'.format(os.path.basename(CheckerManager.EXECUTABLE_FILE)))
 
     if args.username:
+        if args.kill:
+            if kill_user(args.username):
+                print('Kill user success')
+            else:
+                print('Kill user failed')
+
         if args.json:
             print(json.dumps(check_user(args.username), indent=4))
             return
@@ -409,6 +476,12 @@ def main():
     if args.include:
         for name in args.include:
             config.include(name)
+
+    if args.uninstall:
+        service.remove_service()
+        CheckerManager.remove_executable()
+        CheckerUserConfig.remove_config()
+        os.remove(__file__)
 
     if args.run:
         print('Run server...')
@@ -429,7 +502,7 @@ def main():
         return
 
     if args.remove:
-        service.remove()
+        service.remove_executable()
         return
 
     if args.restart:
@@ -447,12 +520,22 @@ def main():
         return
 
     if args.check_update:
-        is_update = CheckerManager.check_update()
+        is_update, version = CheckerManager.check_update()
         print('Have new version: {}'.format('Yes' if is_update else 'No'))
-        return
+        print('Version: {}'.format(version))
 
-    if args.version:
-        print(__version__)
+        while is_update:
+            response = input('Do you want to update? (Y/n) ')
+
+            if response.lower() == 'y':
+                CheckerManager.update()
+                break
+
+            if response.lower() == 'n':
+                break
+
+            print('Invalid response')
+
         return
 
     if len(sys.argv) == 1:

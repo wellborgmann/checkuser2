@@ -6,7 +6,7 @@
 
 # Created by: @DuTra01
 
-url='https://raw.githubusercontent.com/NT-GIT-HUB/DataPlugin/main/user_check.py'
+url='https://raw.githubusercontent.com/DuTra01/GLPlugins/master/user_check.py'
 
 if ! [ -x "$(command -v pip3)" ]; then
     echo 'Error: pip3 não está instalado.' >&2
@@ -41,3 +41,6 @@ read -p "Porta: " -e -i 5000 port
 
 python3 chk.py --port $port --start
 echo 'URL: http://'$(curl -s icanhazip.com)':'$port'/check/'
+echo ''
+echo 'Aplicativo na versão: 3.3+'
+echo 'URL: http://'$(curl -s icanhazip.com)':'$port

@@ -6,7 +6,7 @@
 
 # Created by: @DuTra01
 
-url='https://raw.githubusercontent.com/DuTra01/GLPlugins/master/user_check.py'
+url='https://raw.githubusercontent.com/NT-GIT-HUB/DataPlugin/main/user_check.py'
 
 if ! [ -x "$(command -v pip3)" ]; then
     echo 'Error: pip3 não está instalado.' >&2

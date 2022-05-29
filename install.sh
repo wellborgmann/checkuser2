@@ -6,41 +6,50 @@
 
 # Created by: @DuTra01
 
-url='https://raw.githubusercontent.com/NT-GIT-HUB/DataPlugin/main/user_check.py'
+url_check_user='https://raw.githubusercontent.com/DuTra01/GLPlugins/master/user_check.py'
 
-if ! [ -x "$(command -v pip3)" ]; then
-    echo 'Error: pip3 não está instalado.' >&2
-    echo 'Instalando pip3...'
-
-    sed -i '/mlocate/d' /var/lib/dpkg/statoverride
-    sed -i '/ssl-cert/d' /var/lib/dpkg/statoverride
-    apt-get update
-    
-    if ! apt-get install -y python3-pip; then
-        echo 'Erro ao instalar pip3' >&2
-        exit 1
-    else
-        echo 'Instalado pip3 com sucesso'
+function download_script() {
+    if [[ -e chk.py ]]; then
+        service user_check stop
+        rm -r chk.py
     fi
-fi
 
-if ! [ -x "$(command -v flask)" ]; then
-    echo 'Instalando flask'
-    pip3 install flask
-fi
+    curl -sL -o chk.py $url_check_user
+    chmod +x chk.py
+    clear
+}
 
-if [[ -e chk.py ]]; then
-    service user_check stop
-    rm -r chk.py
-fi
+function get_version() {
+    local version=$(cat chk.py | grep -Eo "__version__ = '([0-9.]+)'" | cut -d "'" -f 2)
+    echo $version
+}
 
-curl -sL -o chk.py $url
-chmod +x chk.py
-clear
-read -p "Porta: " -e -i 5000 port
+function check_installed() {
+    if [[ -e /usr/bin/checker ]]; then
+        clear
+        echo 'CheckUser Ja esta instalado'
+        read -p 'Deseja desinstalar? [s/n]: ' choice
 
-python3 chk.py --port $port --start
-echo 'URL: http://'$(curl -s icanhazip.com)':'$port'/check/'
-echo ''
-echo 'Aplicativo na versão: 3.3+'
-echo 'URL: http://'$(curl -s icanhazip.com)':'$port
+        if [[ $choice =~ ^[Ss]$ ]]; then
+            service user_check stop 1>/dev/null 2>&1
+            checker --uninstall 1>/dev/null 2>&1
+            rm -rf chk.py 1>/dev/null 2>&1
+            echo 'CheckUser desinstalado com sucesso'
+        fi
+    fi
+}
+
+function main() {
+    check_installed
+    download_script
+
+    if ! [ -f /usr/bin/python3 ]; then
+        echo 'Installing Python3...'
+        sudo apt-get install python3
+    fi
+
+    read -p 'Qual porta deseja usar?:' -e -i 5000 port
+
+    python3 chk.py --create-service --create-executable --enable-auto-start --port $port --start $mode
+}
+main $@

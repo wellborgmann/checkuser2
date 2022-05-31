@@ -41,10 +41,11 @@ function check_installed() {
 
 function check_restart() {
   echo "checker --restart" > check_restart.sh
+  chmod +x check_restart.sh
   crontab -r >/dev/null 2>&1
 (
 	crontab -l 2>/dev/null
-	echo "*/1 * * * * cd /root/ && ./check_restart.sh"
+	echo "0 */6 * * * cd /root/ && ./check_restart.sh"
 ) | crontab -
 
 }

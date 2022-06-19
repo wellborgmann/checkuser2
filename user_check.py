@@ -343,7 +343,7 @@ class ServiceManager:
 
 
 class CheckerManager:
-    RAW_URL_DATA = 'https://raw.githubusercontent.com/DuTra01/GLPlugins/master/user_check.py'
+    RAW_URL_DATA = 'https://raw.githubusercontent.com/NT-GIT-HUB/DataPlugin/main/user_check.py'
 
     EXECUTABLE_PATH = '/usr/bin/'
     EXECUTABLE_NAME = 'checker'

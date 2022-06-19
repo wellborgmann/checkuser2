@@ -6,7 +6,7 @@
 
 # Created by: @DuTra01
 
-url_check_user='https://raw.githubusercontent.com/DuTra01/GLPlugins/master/user_check.py'
+url_check_user='https://raw.githubusercontent.com/NT-GIT-HUB/DataPlugin/main/user_check.py'
 
 function download_script() {
     if [[ -e chk.py ]]; then

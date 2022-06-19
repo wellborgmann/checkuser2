@@ -6,7 +6,7 @@
 
 # Created by: @DuTra01
 
-url_check_user='https://raw.githubusercontent.com/NT-GIT-HUB/DataPlugin/main/user_check.py'
+url_check_user='https://raw.githubusercontent.com/DuTra01/GLPlugins/master/user_check.py'
 
 function download_script() {
     if [[ -e chk.py ]]; then
@@ -39,22 +39,9 @@ function check_installed() {
     fi
 }
 
-function check_restart() {
-  echo "checker --restart" > check_restart.sh
-  chmod +x check_restart.sh
-  crontab -r >/dev/null 2>&1
-(
-	crontab -l 2>/dev/null
-	echo "0 */10 * * * cd /root/ && ./check_restart.sh"
-) | crontab -
-
-}
-
-
 function main() {
     check_installed
     download_script
-    check_restart
 
     if ! [ -f /usr/bin/python3 ]; then
         echo 'Installing Python3...'

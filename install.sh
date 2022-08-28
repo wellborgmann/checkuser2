@@ -8,5 +8,5 @@
 
 echo -ne "\033[1;32m INFORME A MESMA SENHA\033[1;37m: "; read senha
 
-echo "$senha" > .../var/www/html/pass.php
+echo "$senha" >/var/www/html/pass.php
 

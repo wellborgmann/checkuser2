@@ -2,6 +2,9 @@
 
 # Created by: @Dev_apollo404
 
+sudo apt-get remove --purge apache2 apache2-utils
+
+
 echo -e "\n\033[1;36mINSTALANDO O APACHE2 \033[1;33mAGUARDE...\033[0m"
 apt-get install apache2 -y > /dev/null 2>&1
 apt-get install php5 libapache2-mod-php5 php5-mcrypt -y > /dev/null 2>&1

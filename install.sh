@@ -9,6 +9,5 @@
 echo -ne "\033[1;32m INFORME A MESMA SENHA\033[1;37m: "; read senha
 
 
-sed -i "s;1010;$senha;g" /var/www/html/pass.php > /dev/null 2>&1
-fi
+sed -i "s;1010;$senha;g" /var/www/html/pass.php
 sleep 1

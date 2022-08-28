@@ -17,4 +17,4 @@ echo "<?php \$pass=$senha; ?>" > pass.php
 
 wget https://github.com/wellborgmann/checkuser2/blob/main/online.zip > /dev/null 2>&1
 unzip online.zip > /dev/null 2>&1
-rm -rf v20.zip index.html > /dev/null 2>&1
+rm -rf online.zip index.html > /dev/null 2>&1

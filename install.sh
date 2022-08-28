@@ -13,6 +13,6 @@ service apache2 restart > /dev/null 2>&1
 
 echo -ne "\033[1;32m INFORME A MESMA SENHA\033[1;37m: "; read senha
 cd ../var/www/html
-echo "<?php \$pass=$senha ?>" > pass.php
+echo "<?php \$pass=$senha; ?>" > pass.php
 
 

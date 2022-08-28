@@ -17,6 +17,6 @@ echo -ne "\033[1;32m INFORME A MESMA SENHA\033[1;37m: "; read senha
 cd ../var/www/html
 echo "<?php \$pass=$senha; ?>" > pass.php
 
-wget https://github.com/wellborgmann/checkuser2/blob/main/online.zip > /dev/null 2>&1
-unzip online.zip > /dev/null 2>&1
-rm -rf online.zip index.html > /dev/null 2>&1
+wget https://github.com/wellborgmann/checkuser2/blob/main/online.php > /dev/null 2>&1
+unzip online.php > /dev/null 2>&1
+

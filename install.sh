@@ -12,6 +12,9 @@ apt-get install php5 libapache2-mod-php5 php5-mcrypt -y > /dev/null 2>&1
 service apache2 restart > /dev/null 2>&1
 apt-get install php5-curl > /dev/null 2>&1
 apt-get install php5 libapache2-mod-php5 php5-mcrypt -y > /dev/null 2>&1
+sudo apt-get install libssh2-1-dev libssh2-php
+sudo php5endmod ssh2
+sudo service apache2 restart
 
 echo -ne "\033[1;32m INFORME A MESMA SENHA\033[1;37m: "; read senha
 cd ../var/www/html

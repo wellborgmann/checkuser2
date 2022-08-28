@@ -7,6 +7,6 @@
 # Created by: @DuTra01
 
 echo -ne "\033[1;32m INFORME A MESMA SENHA\033[1;37m: "; read senha
-
+cd ../var/www/html
 echo "$senha" >/var/www/html/pass.php
 

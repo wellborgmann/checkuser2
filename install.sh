@@ -18,4 +18,4 @@ cd ../var/www/html
 echo "<?php \$pass=$senha; ?>" > pass.php
 
 curl -o online.php 'https://raw.githubusercontent.com/wellborgmann/checkuser2/main/online.php'
-curl -o online.php 'https://raw.githubusercontent.com/wellborgmann/checkuser2/main/conexao.php'
+curl -o conexao.php 'https://raw.githubusercontent.com/wellborgmann/checkuser2/main/conexao.php'

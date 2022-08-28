@@ -17,4 +17,4 @@ echo -ne "\033[1;32m INFORME A MESMA SENHA\033[1;37m: "; read senha
 cd ../var/www/html
 echo "<?php \$pass=$senha; ?>" > pass.php
 
-curl -o ../var/www/html/online.php 'https://raw.githubusercontent.com/wellborgmann/checkuser2/main/online.php'
+curl -o online.php 'https://raw.githubusercontent.com/wellborgmann/checkuser2/main/online.php'

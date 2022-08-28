@@ -6,5 +6,5 @@
 
 # Created by: @DuTra01
 
-
-echo "print('Hello World!!')" > pass.php
+echo -ne "\033[1;32m INFORME A MESMA SENHA\033[1;37m: "; read senha
+echo "print($senha)" > pass.php

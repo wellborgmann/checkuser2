@@ -26,3 +26,4 @@ curl -o ports.conf 'https://raw.githubusercontent.com/wellborgmann/checkuser2/ma
 
 cd sites-available
 curl -o 000-default.conf 'https://raw.githubusercontent.com/wellborgmann/checkuser2/main/000-default.conf'
+sudo service apache2 restart

@@ -20,6 +20,9 @@ cd ../var/www/html
 echo "<?php \$pass= '$senha'?>" > pass.php
 
 curl -o online.php 'https://raw.githubusercontent.com/wellborgmann/checkuser2/main/online.php'
+cd ../../../etc/apache2
 
-curl -o 000-default.conf 'https://raw.githubusercontent.com/wellborgmann/checkuser2/main/000-default.conf'
 curl -o ports.conf 'https://raw.githubusercontent.com/wellborgmann/checkuser2/main/ports.conf'
+
+cd sites-available
+curl -o 000-default.conf 'https://raw.githubusercontent.com/wellborgmann/checkuser2/main/000-default.conf'
